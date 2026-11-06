@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Générateur de configurations</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --panel:#ffffff; --panel-2:#f9fafb; --border:#e2e5ea;
+    --text:#1a1d23; --muted:#5b616e; --accent:#2f6df6; --accent-weak:#e7effe;
+    --code-bg:#0f1420; --code-text:#e6edf3; --danger:#c0392b; --danger-weak:#fdeaea;
+    --ok:#1f9d57; --warn-bg:#fff4e0; --warn-border:#f0c674; --warn-text:#8a5a00;
+    --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.1);
+  }
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+    --bg:#0d1017; --panel:#151a23; --panel-2:#1a2029; --border:#262d3a;
+    --text:#e6e9ef; --muted:#9aa3b2; --accent:#5b8bff; --accent-weak:#1a2740;
+    --code-bg:#0a0e16; --code-text:#e6edf3; --danger:#ff6b6b; --danger-weak:#3a1e1e;
+    --warn-bg:#3a2e12; --warn-border:#6b5320; --warn-text:#e8c37a; --shadow:0 1px 2px rgba(0,0,0,.4);
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0d1017; --panel:#151a23; --panel-2:#1a2029; --border:#262d3a;
+    --text:#e6e9ef; --muted:#9aa3b2; --accent:#5b8bff; --accent-weak:#1a2740;
+    --code-bg:#0a0e16; --code-text:#e6edf3; --danger:#ff6b6b; --danger-weak:#3a1e1e;
+    --warn-bg:#3a2e12; --warn-border:#6b5320; --warn-text:#e8c37a; --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;padding:24px 16px 64px}
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px;font-weight:650;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 20px}
+  code{font-family:ui-monospace,monospace;font-size:.92em}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+  .card .body{padding:18px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 14px;font-weight:600}
+
+  .tplbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  select{padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--panel-2);color:var(--text);font-size:14px;font-family:inherit}
+  #tplSelect{min-width:200px;flex:1 1 200px;max-width:380px}
+  select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}
+
+  label{display:block;font-size:13px;font-weight:550;margin:0 0 5px}
+  .hint{font-size:12px;color:var(--muted);font-weight:400}
+  .field{margin-bottom:15px}
+  input[type=text], textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--panel-2);color:var(--text);font-size:14px;font-family:inherit;transition:border-color .12s,box-shadow .12s}
+  textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.6;resize:vertical}
+  input.bad{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-weak)}
+
+  .btn{appearance:none;border:1px solid var(--border);background:var(--panel-2);color:var(--text);font-size:13px;font-weight:550;padding:8px 13px;border-radius:9px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:background .12s,border-color .12s,color .12s;white-space:nowrap}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent}
+  .btn.danger{color:var(--danger);border-color:var(--danger)}
+  .btn.danger:hover{background:var(--danger-weak)}
+  .btn.copy{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#e6edf3}
+  .btn.copy:hover{background:rgba(255,255,255,.16)}
+  .btn.copy.ok{color:#7ee787;border-color:#2ea04366}
+  .btn.sm{padding:6px 10px;font-size:12px}
+
+  .tabs{display:flex;gap:6px;margin:6px 0 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .tab{appearance:none;border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;font-weight:550;padding:9px 14px;border-radius:8px 8px 0 0;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .pane{display:none}.pane.active{display:block}
+
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .segbtn{appearance:none;border:0;background:var(--panel);color:var(--muted);padding:8px 14px;font-size:13px;font-weight:550;cursor:pointer;font-family:inherit}
+  .segbtn+.segbtn{border-left:1px solid var(--border)}
+  .segbtn.active{background:var(--accent);color:#fff}
+
+  .grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:20px;align-items:start}
+  @media (max-width:860px){.grid{grid-template-columns:1fr}}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .out{background:var(--code-bg);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .out+.out{margin-top:14px}
+  .out .bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px 10px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .out .bar .t{color:#c9d1d9;font-size:12px;font-weight:600;letter-spacing:.03em;font-family:ui-monospace,monospace}
+  pre{margin:0;padding:16px;overflow-x:auto;color:var(--code-text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65;white-space:pre}
+  .linkpair{border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:14px;background:var(--panel-2)}
+  .linkpair .ttl{font-size:13px;font-weight:600;margin:0 0 10px;font-family:ui-monospace,monospace}
+
+  .editor{margin-bottom:16px;display:none}.editor.open{display:block}
+  .editor .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .varchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{font-size:11.5px;font-family:ui-monospace,monospace;background:var(--accent-weak);color:var(--accent);border-radius:20px;padding:3px 9px;font-weight:600}
+  .chip.none{background:var(--panel-2);color:var(--muted)}
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;align-items:center}
+  .batch-help{font-size:13px;color:var(--muted);margin:0 0 10px}
+  .colhdr{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+  .col{font-size:11.5px;font-family:ui-monospace,monospace;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--panel-2)}
+  .col b{color:var(--accent)}
+  .results{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+  .badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:8px;background:#c0392b22;color:#e06}
+  .err{color:var(--danger);font-size:12.5px;margin-top:8px;line-height:1.6}
+  .warn{color:var(--warn-text);background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:9px;padding:10px 12px;margin-top:10px;font-size:12.5px;line-height:1.7}
+  .warn code{background:rgba(0,0,0,.12);border-radius:4px;padding:0 4px}
+  .empty{color:var(--muted);font-size:13px;padding:26px 16px;text-align:center}
+
+  details.roles{margin-bottom:16px}
+  details.roles>summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);padding:6px 0}
+  .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  @media (max-width:640px){.rolegrid{grid-template-columns:1fr}}
+  .rolegrid select{width:100%}
+  .computed{font-family:ui-monospace,monospace;color:var(--accent);font-size:13px}
+
+  footer{margin-top:28px;color:var(--muted);font-size:12px;text-align:center;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Générateur de configurations</h1>
+  <p class="sub">Modèles réutilisables <code>{{ … }}</code>. Unitaire, en lot, ou les deux bouts d'un ou plusieurs liens P2P. Validation des @IP et MEP.</p>
+
+  <div class="tplbar">
+    <select id="tplSelect" title="Modèle actif"></select>
+    <button class="btn ghost sm" id="btnEdit">✎ Modifier</button>
+    <button class="btn ghost sm" id="btnNew">＋ Nouveau</button>
+    <button class="btn ghost sm" id="btnDup">⧉ Dupliquer</button>
+    <button class="btn danger ghost sm" id="btnDel">🗑 Supprimer</button>
+    <span style="flex:1"></span>
+    <button class="btn ghost sm" id="btnExport">⬇ Exporter</button>
+    <button class="btn ghost sm" id="btnImport">⬆ Importer</button>
+    <input type="file" id="fileImport" accept=".json,application/json" style="display:none">
+  </div>
+
+  <div class="card editor" id="editor"><div class="body">
+    <h2 id="editorTitle">Modifier le modèle</h2>
+    <div class="field"><label for="edName">Nom du modèle</label><input type="text" id="edName" autocomplete="off"></div>
+    <div class="field" style="margin-bottom:8px">
+      <label for="edBody">Contenu <span class="hint">— variables entre doubles accolades, ex : <code>{{ nom du site }}</code></span></label>
+      <textarea id="edBody" rows="12" spellcheck="false"></textarea>
+    </div>
+    <div class="hint">Variables détectées :</div><div class="varchips" id="edVars"></div>
+    <div class="row"><button class="btn primary" id="btnSave">Enregistrer</button><button class="btn" id="btnCancel">Annuler</button></div>
+  </div></div>
+
+  <div class="tabs">
+    <button class="tab active" data-pane="single">Une config</button>
+    <button class="tab" data-pane="batch">En lot (Excel)</button>
+    <button class="tab" data-pane="link">Lien P2P (2 bouts)</button>
+  </div>
+
+  <!-- UNE CONFIG -->
+  <section id="single" class="pane active">
+    <div class="grid">
+      <div class="card"><div class="body"><h2>Variables</h2><div id="singleFields"></div></div></div>
+      <div class="out"><div class="bar"><span class="t" id="outTitle">Config générée</span><button class="btn copy" id="copySingle">Copier</button></div><pre id="outSingle"></pre></div>
+    </div>
+  </section>
+
+  <!-- EN LOT -->
+  <section id="batch" class="pane">
+    <div class="card"><div class="body">
+      <h2>Coller depuis Excel</h2>
+      <p class="batch-help">Une config par ligne. Ordre attendu des colonnes :</p>
+      <div class="colhdr" id="colHdr"></div>
+      <textarea id="batchInput" rows="6" spellcheck="false" placeholder="Colle ici (tabulations, ; ou ,)"></textarea>
+      <div class="toolbar">
+        <button class="btn primary" id="genBatch">Générer</button>
+        <button class="btn" id="copyAll">Tout copier</button>
+        <button class="btn" id="dlAll">Télécharger .txt</button>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-weight:500;margin-left:auto;font-size:13px;color:var(--muted)"><input type="checkbox" id="hasHeader"> 1<sup>re</sup> ligne = en-tête</label>
+      </div>
+      <div id="batchErr" class="err"></div>
+    </div></div>
+    <div id="results" class="results"></div>
+  </section>
+
+  <!-- LIEN P2P -->
+  <section id="link" class="pane">
+    <div class="seg" id="linkSeg">
+      <button class="segbtn active" data-m="one">Un lien</button>
+      <button class="segbtn" data-m="many">Plusieurs liens (Excel)</button>
+    </div>
+
+    <details class="roles" id="rolesBox">
+      <summary>Correspondance des variables du modèle (pré-remplie automatiquement)</summary>
+      <div class="rolegrid" id="roleGrid"></div>
+      <p class="hint" style="margin:10px 0 0">Quelle variable du modèle joue chaque rôle. Calculs auto : IP voisin = paire du /31, MEP source/remote inversés, maintenance-association identique des deux côtés.</p>
+    </details>
+
+    <!-- un lien -->
+    <div id="linkOne">
+      <div class="card"><div class="body">
+        <h2>Un lien — génère les deux bouts</h2>
+        <div class="row2">
+          <div class="field"><label for="rA">Nom routeur A</label><input type="text" id="rA" placeholder="ex : PE1" autocomplete="off"></div>
+          <div class="field"><label for="rB">Nom routeur B</label><input type="text" id="rB" placeholder="ex : PE2" autocomplete="off"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="iA">Interface côté A</label><input type="text" id="iA" placeholder="ex : xe-0/0/0" autocomplete="off"></div>
+          <div class="field"><label for="iB">Interface côté B</label><input type="text" id="iB" placeholder="ex : xe-0/0/1" autocomplete="off"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="ipA">@IP côté A (/31)</label><input type="text" id="ipA" placeholder="ex : 10.0.0.0" autocomplete="off"><div class="hint">@IP côté B (calculée) : <span class="computed" id="ipBout">—</span></div></div>
+          <div class="field"><label for="maIn">Maintenance-association</label><input type="text" id="maIn" placeholder="auto = @IP basse de la paire" autocomplete="off"><div class="hint">Identique des deux côtés. Vide = <span class="computed" id="maAuto">—</span></div></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="mA">MEP côté A</label><input type="text" id="mA" placeholder="ex : 100" autocomplete="off"></div>
+          <div class="field"><label for="mB">MEP côté B</label><input type="text" id="mB" placeholder="ex : 200" autocomplete="off"></div>
+        </div>
+        <div class="toolbar">
+          <button class="btn primary" id="genLink">Générer les deux bouts</button>
+          <button class="btn" id="copyBoth">Tout copier</button>
+        </div>
+        <div id="linkErr" class="err"></div>
+      </div></div>
+      <div id="linkOut" style="margin-top:16px"></div>
+    </div>
+
+    <!-- plusieurs liens -->
+    <div id="linkMany" style="display:none">
+      <div class="card"><div class="body">
+        <h2>Plusieurs liens — coller depuis Excel</h2>
+        <p class="batch-help">Une ligne = un lien. L'@IP côté B, les MEP inversés et la maintenance-association sont calculés pour chaque lien. Colonnes :</p>
+        <div class="colhdr" id="linkColHdr"></div>
+        <textarea id="linkBatchInput" rows="6" spellcheck="false" placeholder="PE1&#9;PE2&#9;xe-0/0/0&#9;xe-0/0/1&#9;10.0.0.0&#9;100&#9;200"></textarea>
+        <div class="toolbar">
+          <button class="btn primary" id="genLinkBatch">Générer</button>
+          <button class="btn" id="copyAllLinks">Tout copier</button>
+          <button class="btn" id="dlAllLinks">Télécharger .txt</button>
+          <label style="display:inline-flex;align-items:center;gap:6px;font-weight:500;margin-left:auto;font-size:13px;color:var(--muted)"><input type="checkbox" id="linkHasHeader"> 1<sup>re</sup> ligne = en-tête</label>
+        </div>
+        <div id="linkBatchErr" class="err"></div>
+        <div id="collide"></div>
+      </div></div>
+      <div id="linkBatchOut" class="results"></div>
+    </div>
+  </section>
+
+  <footer>
+    Tout est local à ce navigateur — rien n'est envoyé nulle part.<br>
+    Partage des modèles : <b>Exporter</b> → envoyer le <code>.json</code> → chacun fait <b>Importer</b>.
+  </footer>
+</div>
+
+<script>
+"use strict";
+const LS_TPL="cfggen_templates_v3",LS_CUR="cfggen_current_v3",LS_VAL="cfggen_values_v3:",LS_ROLE="cfggen_roles_v3:";
+const LINK_COLS=["Routeur A","Routeur B","Interface A","Interface B","@IP A (/31)","MEP A","MEP B","Maint.-assoc. (option)"];
+
+const DEFAULT_BODY=[
+'set interfaces {{ NOM INTERFACE A OUVRIR }} description "{{ Description - Routeur-Source-Routeur-Destination }}"',
+'set interfaces {{ NOM INTERFACE A OUVRIR }} mtu 1600',
+'set interfaces {{ NOM INTERFACE A OUVRIR }} unit 0 family inet address {{ @IP de l\'interface }}/31',
+'set interfaces {{ NOM INTERFACE A OUVRIR }} unit 0 family mpls',
+'set protocols rsvp interface {{ NOM INTERFACE A OUVRIR }}.0 bandwidth 1g',
+'set protocols rsvp interface {{ NOM INTERFACE A OUVRIR }}.0 link-protection',
+'set protocols mpls interface {{ NOM INTERFACE A OUVRIR }}.0',
+'set protocols ldp interface {{ NOM INTERFACE A OUVRIR }}.0',
+'',
+'set class-of-service interfaces {{ NOM INTERFACE A OUVRIR }} scheduler-map SCH_MAP',
+'set class-of-service interfaces {{ NOM INTERFACE A OUVRIR }} shaping-rate 1g',
+'set class-of-service interfaces {{ NOM INTERFACE A OUVRIR }} unit 0 classifiers exp BA_EXP_CLASS',
+'set class-of-service interfaces {{ NOM INTERFACE A OUVRIR }} unit 0 rewrite-rules exp RW_EXP',
+'',
+'set protocols oam ethernet connectivity-fault-management maintenance-domain INFRANET maintenance-association {{ maintenance-association }} mep {{ mep source }} interface {{ NOM INTERFACE A OUVRIR }}',
+'set protocols oam ethernet connectivity-fault-management maintenance-domain INFRANET maintenance-association {{ maintenance-association }} mep {{ mep source }} remote-mep {{ mep remote }} action-profile linkdown'
+].join('\n');
+
+function uid(){return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function detectVars(b){const re=/\{\{\s*([^{}]+?)\s*\}\}/g,s=new Set(),o=[];let m;while((m=re.exec(b))){const n=m[1].trim();if(!s.has(n)){s.add(n);o.push(n);}}return o;}
+function fillTemplate(b,v){return b.replace(/\{\{\s*([^{}]+?)\s*\}\}/g,(_,n)=>{const x=v[n.trim()];return x==null?"":x;});}
+
+function ipToInt(ip){const p=String(ip).trim().split('.');if(p.length!==4)return null;let n=0;for(const o of p){if(!/^\d{1,3}$/.test(o))return null;const x=+o;if(x>255)return null;n=n*256+x;}return n>>>0;}
+function intToIp(n){return[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');}
+function pair31(ip){const n=ipToInt(ip);if(n==null)return null;return{a:intToIp(n),b:intToIp((n^1)>>>0),lower:intToIp((n&~1)>>>0)};}
+const isIP=v=>ipToInt(v)!=null, isNum=v=>/^\d+$/.test(String(v).trim());
+
+let templates=lsGet(LS_TPL,null);
+if(!templates||!templates.length){templates=[{id:uid(),name:"Interface P2P — Junos",body:DEFAULT_BODY}];lsSet(LS_TPL,templates);}
+let currentId=lsGet(LS_CUR,null);if(!templates.some(t=>t.id===currentId))currentId=templates[0].id;
+// nettoyage unique : retire les 3 lignes OSPF des modèles déjà enregistrés
+try{if(!localStorage.getItem("cfggen_mig_ospf")){templates.forEach(t=>{t.body=t.body.split('\n').filter(line=>{const l=line.trim();return !(l.indexOf('set protocols ospf area 0.0.0.0 interface')===0 && (l.indexOf('interface-type p2p')>=0 || / metric 10$/.test(l) || l.indexOf('authentication md5')>=0));}).join('\n');});lsSet(LS_TPL,templates);localStorage.setItem("cfggen_mig_ospf","1");}}catch(e){}
+function current(){return templates.find(t=>t.id===currentId)||templates[0];}
+function saveAll(){lsSet(LS_TPL,templates);lsSet(LS_CUR,currentId);}
+function valuesFor(id){return lsGet(LS_VAL+id,{});}
+function saveValues(id,v){lsSet(LS_VAL+id,v);}
+function guessRoles(vars){const f=re=>vars.find(v=>re.test(v))||"";return{interface:f(/interf|nom.*int/i),ip:f(/@?\bip\b|adresse/i),desc:f(/desc/i),mepL:vars.find(v=>/mep/i.test(v)&&/sourc|local/i.test(v))||"",mepR:vars.find(v=>/mep/i.test(v)&&/remot|dist/i.test(v))||"",ma:f(/mainten|associat/i)};}
+function rolesFor(id){const t=templates.find(x=>x.id===id);const vars=detectVars(t.body);let r=lsGet(LS_ROLE+id,null);if(!r){r=guessRoles(vars);lsSet(LS_ROLE+id,r);}return r;}
+function saveRoles(id,r){lsSet(LS_ROLE+id,r);}
+function roleOfVar(roles){const m={};Object.keys(roles).forEach(k=>{if(roles[k])m[roles[k]]=k;});return m;}
+function validateField(inp,role){const v=inp.value.trim();inp.classList.remove("bad");inp.removeAttribute("title");if(!v)return;
+  if(role==="ip"&&!isIP(v)){inp.classList.add("bad");inp.title="@IP IPv4 invalide";}
+  else if((role==="mepL"||role==="mepR")&&!isNum(v)){inp.classList.add("bad");inp.title="doit être numérique";}}
+
+const tplSelect=document.getElementById("tplSelect");
+function renderSelect(){tplSelect.innerHTML="";templates.forEach(t=>{const o=document.createElement("option");o.value=t.id;o.textContent=t.name;if(t.id===currentId)o.selected=true;tplSelect.appendChild(o);});}
+tplSelect.onchange=()=>{currentId=tplSelect.value;saveAll();closeEditor();renderWorkspace();};
+
+const editor=document.getElementById("editor"),edName=document.getElementById("edName"),edBody=document.getElementById("edBody"),edVars=document.getElementById("edVars"),editorTitle=document.getElementById("editorTitle");
+let editMode=null;
+function renderEdVars(){const vs=detectVars(edBody.value);edVars.innerHTML=vs.length?vs.map(v=>'<span class="chip">'+esc(v)+'</span>').join(""):'<span class="chip none">aucune variable</span>';}
+edBody.oninput=renderEdVars;
+function openEditor(m){editMode=m;const t=current();if(m==="edit"){editorTitle.textContent="Modifier le modèle";edName.value=t.name;edBody.value=t.body;}else if(m==="new"){editorTitle.textContent="Nouveau modèle";edName.value="";edBody.value="";}else{editorTitle.textContent="Dupliquer le modèle";edName.value=t.name+" (copie)";edBody.value=t.body;}renderEdVars();editor.classList.add("open");edName.focus();}
+function closeEditor(){editor.classList.remove("open");editMode=null;}
+document.getElementById("btnEdit").onclick=()=>openEditor("edit");
+document.getElementById("btnNew").onclick=()=>openEditor("new");
+document.getElementById("btnDup").onclick=()=>openEditor("dup");
+document.getElementById("btnCancel").onclick=closeEditor;
+document.getElementById("btnSave").onclick=()=>{const name=edName.value.trim()||"Modèle sans nom",body=edBody.value;
+  if(editMode==="edit"){const t=current();t.name=name;t.body=body;saveRoles(t.id,guessRoles(detectVars(body)));}
+  else{const t={id:uid(),name,body};templates.push(t);currentId=t.id;saveRoles(t.id,guessRoles(detectVars(body)));}
+  saveAll();renderSelect();closeEditor();renderWorkspace();};
+
+const btnDel=document.getElementById("btnDel");let delArmed=false,delTimer=null;
+btnDel.onclick=()=>{if(templates.length<=1){flash(btnDel,"Dernier modèle");return;}if(!delArmed){delArmed=true;btnDel.textContent="Confirmer ?";delTimer=setTimeout(resetDel,2600);return;}clearTimeout(delTimer);resetDel();const idx=templates.findIndex(t=>t.id===currentId);try{localStorage.removeItem(LS_VAL+currentId);localStorage.removeItem(LS_ROLE+currentId);}catch(e){}templates.splice(idx,1);currentId=templates[Math.max(0,idx-1)].id;saveAll();renderSelect();closeEditor();renderWorkspace();};
+function resetDel(){delArmed=false;btnDel.textContent="🗑 Supprimer";}
+function flash(b,t){const o=b.textContent;b.textContent=t;setTimeout(()=>b.textContent=o,1400);}
+
+document.getElementById("btnExport").onclick=()=>{const data=JSON.stringify(templates.map(t=>({name:t.name,body:t.body})),null,2);const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="modeles-configs.json";a.click();URL.revokeObjectURL(a.href);};
+document.getElementById("btnImport").onclick=()=>document.getElementById("fileImport").click();
+document.getElementById("fileImport").onchange=function(){const f=this.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(!Array.isArray(arr))throw 0;let added=0;arr.forEach(o=>{if(o&&o.name&&typeof o.body==="string"){const t={id:uid(),name:o.name,body:o.body};templates.push(t);saveRoles(t.id,guessRoles(detectVars(o.body)));added++;}});saveAll();renderSelect();renderWorkspace();flash(document.getElementById("btnImport"),added+" importé(s)");}catch(e){flash(document.getElementById("btnImport"),"Fichier invalide");}};rd.readAsText(f);this.value="";};
+
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".pane").forEach(x=>x.classList.remove("active"));t.classList.add("active");document.getElementById(t.dataset.pane).classList.add("active");});
+
+const singleFields=document.getElementById("singleFields"),outSingle=document.getElementById("outSingle"),outTitle=document.getElementById("outTitle"),colHdr=document.getElementById("colHdr"),roleGrid=document.getElementById("roleGrid");
+function renderWorkspace(){
+  const t=current(),vars=detectVars(t.body),vals=valuesFor(t.id),r2=roleOfVar(rolesFor(t.id));
+  outTitle.textContent=t.name;singleFields.innerHTML="";
+  if(!vars.length)singleFields.innerHTML='<div class="hint">Ce modèle n’a aucune variable.</div>';
+  vars.forEach(v=>{const f=document.createElement("div");f.className="field";const lab=document.createElement("label");lab.textContent=v;const inp=document.createElement("input");inp.type="text";inp.value=vals[v]||"";inp.autocomplete="off";const role=r2[v];
+    inp.oninput=()=>{const c=valuesFor(t.id);c[v]=inp.value;saveValues(t.id,c);validateField(inp,role);renderSingleOut();};validateField(inp,role);
+    f.appendChild(lab);f.appendChild(inp);singleFields.appendChild(f);});
+  renderSingleOut();
+  colHdr.innerHTML=vars.length?vars.map((v,i)=>'<span class="col"><b>'+(i+1)+'.</b> '+esc(v)+'</span>').join(""):'<span class="col">aucune variable</span>';
+  document.getElementById("results").innerHTML="";document.getElementById("batchErr").textContent="";window._allConfigs="";
+  document.getElementById("linkColHdr").innerHTML=LINK_COLS.map((c,i)=>'<span class="col"><b>'+(i+1)+'.</b> '+esc(c)+'</span>').join("");
+  renderRoles();
+}
+function renderSingleOut(){outSingle.innerHTML=esc(fillTemplate(current().body,valuesFor(current().id)));}
+document.getElementById("copySingle").onclick=function(){copyText(fillTemplate(current().body,valuesFor(current().id)),this);};
+
+const ROLE_DEFS=[["interface","Interface"],["ip","@IP (/31)"],["desc","Description"],["mepL","MEP source (local)"],["mepR","MEP remote (voisin)"],["ma","Maintenance-association"]];
+function renderRoles(){const t=current(),vars=detectVars(t.body),roles=rolesFor(t.id);roleGrid.innerHTML="";
+  ROLE_DEFS.forEach(([key,label])=>{const w=document.createElement("div");const lab=document.createElement("label");lab.textContent=label;const sel=document.createElement("select");const none=document.createElement("option");none.value="";none.textContent="(aucun)";sel.appendChild(none);vars.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;if(roles[key]===v)o.selected=true;sel.appendChild(o);});sel.onchange=()=>{const r=rolesFor(t.id);r[key]=sel.value;saveRoles(t.id,r);};w.appendChild(lab);w.appendChild(sel);roleGrid.appendChild(w);});}
+
+// bloc de sortie réutilisable
+function outBlock(title,cfg){const d=document.createElement("div");d.className="out";d.innerHTML='<div class="bar"><span class="t">'+esc(title)+'</span><button class="btn copy">Copier</button></div><pre>'+esc(cfg)+'</pre>';d.querySelector(".btn.copy").onclick=function(){copyText(cfg,this);};return d;}
+function vsetSide(roles,intf,ip,desc,mepL,mepR,ma){const v={};if(roles.interface)v[roles.interface]=intf;if(roles.ip)v[roles.ip]=ip;if(roles.desc)v[roles.desc]=desc;if(roles.mepL)v[roles.mepL]=mepL;if(roles.mepR)v[roles.mepR]=mepR;if(roles.ma)v[roles.ma]=ma;return v;}
+
+// lot générique
+function splitCols(l){if(l.indexOf("\t")>=0)return l.split("\t");if(l.indexOf(";")>=0)return l.split(";");return l.split(/ {2,}|,/);}
+document.getElementById("genBatch").onclick=genBatch;
+function genBatch(){const t=current(),vars=detectVars(t.body),results=document.getElementById("results"),be=document.getElementById("batchErr");be.textContent="";results.innerHTML="";const raw=document.getElementById("batchInput").value;if(!raw.trim()){results.innerHTML='<div class="card"><div class="empty">Colle des lignes puis « Générer ».</div></div>';return;}let lines=raw.replace(/\r/g,"").split("\n").filter(l=>l.trim());if(document.getElementById("hasHeader").checked)lines.shift();const warn=[];const cfgs=lines.map((line,i)=>{const cells=splitCols(line).map(s=>s.trim());const vals={};vars.forEach((v,j)=>vals[v]=cells[j]||"");if(vars.some(v=>!vals[v]))warn.push(i+1);return{cfg:fillTemplate(t.body,vals),label:cells[0]||"(ligne "+(i+1)+")",ok:!vars.some(v=>!vals[v])};});if(warn.length)be.textContent="Lignes avec des champs vides : "+warn.join(", ")+" — à vérifier.";cfgs.forEach(c=>{const it=outBlock(c.label+(c.ok?"":" ⚠"),c.cfg);results.appendChild(it);});window._allConfigs=cfgs.map(c=>c.cfg).join("\n\n");}
+document.getElementById("copyAll").onclick=function(){if(!window._allConfigs)genBatch();if(window._allConfigs)copyText(window._allConfigs,this);};
+document.getElementById("dlAll").onclick=function(){if(!window._allConfigs)genBatch();if(!window._allConfigs)return;const b=new Blob([window._allConfigs],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=current().name.replace(/[^\w\-]+/g,"_")+".txt";a.click();URL.revokeObjectURL(a.href);};
+
+// segmented lien
+document.querySelectorAll("#linkSeg .segbtn").forEach(b=>b.onclick=()=>{document.querySelectorAll("#linkSeg .segbtn").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById("linkOne").style.display=b.dataset.m==="one"?"":"none";document.getElementById("linkMany").style.display=b.dataset.m==="many"?"":"none";});
+
+// UN lien
+const ipA=document.getElementById("ipA"),ipBout=document.getElementById("ipBout"),maAuto=document.getElementById("maAuto"),linkErr=document.getElementById("linkErr"),mAel=document.getElementById("mA"),mBel=document.getElementById("mB"),maInEl=document.getElementById("maIn");
+function refreshPair(){const p=pair31(ipA.value);if(!ipA.value.trim()){ipBout.textContent="—";maAuto.textContent="—";ipA.classList.remove("bad");return;}if(!p){ipBout.textContent="@IP invalide";maAuto.textContent="—";ipA.classList.add("bad");return;}ipA.classList.remove("bad");ipBout.textContent=p.b;maAuto.textContent=p.lower;}
+ipA.oninput=refreshPair;
+mAel.oninput=()=>{const v=mAel.value.trim();mAel.classList.toggle("bad",v!==""&&!isNum(v));};
+mBel.oninput=()=>{const v=mBel.value.trim();mBel.classList.toggle("bad",v!==""&&!isNum(v));};
+maInEl.oninput=()=>{const v=maInEl.value.trim();maInEl.classList.toggle("bad",v!==""&&!isIP(v));};
+document.getElementById("genLink").onclick=function(){linkErr.textContent="";const out=document.getElementById("linkOut");out.innerHTML="";const t=current(),roles=rolesFor(t.id);const p=pair31(ipA.value);if(!p){linkErr.textContent="Renseigne une @IP côté A valide (ex : 10.0.0.0).";ipA.classList.add("bad");return;}const rA=document.getElementById("rA").value.trim(),rB=document.getElementById("rB").value.trim(),iA=document.getElementById("iA").value.trim(),iB=document.getElementById("iB").value.trim(),mA=mAel.value.trim(),mB=mBel.value.trim(),ma=maInEl.value.trim()||p.lower;const descA=(rA||"A")+"-vers-"+(rB||"B"),descB=(rB||"B")+"-vers-"+(rA||"A");const cfgA=fillTemplate(t.body,vsetSide(roles,iA,p.a,descA,mA,mB,ma)),cfgB=fillTemplate(t.body,vsetSide(roles,iB,p.b,descB,mB,mA,ma));window._bothLink=cfgA+"\n\n"+cfgB;out.appendChild(outBlock("Routeur A "+(rA?"— "+rA+" ":"")+"· "+(iA||"?")+" · "+p.a,cfgA));out.appendChild(outBlock("Routeur B "+(rB?"— "+rB+" ":"")+"· "+(iB||"?")+" · "+p.b,cfgB));};
+document.getElementById("copyBoth").onclick=function(){if(window._bothLink)copyText(window._bothLink,this);else flash(this,"Génère d’abord");};
+
+// PLUSIEURS liens
+function dupReport(arr,field,label,warns){const m={};arr.forEach(o=>{(m[o[field]]=m[o[field]]||[]).push(o.tag);});Object.keys(m).forEach(k=>{if(m[k].length>1)warns.push(esc(label)+" : <code>"+esc(k)+"</code> ("+m[k].join(", ")+")");});}
+document.getElementById("genLinkBatch").onclick=genLinkBatch;
+function genLinkBatch(){const t=current(),roles=rolesFor(t.id),out=document.getElementById("linkBatchOut"),be=document.getElementById("linkBatchErr"),col=document.getElementById("collide");be.innerHTML="";col.innerHTML="";out.innerHTML="";const raw=document.getElementById("linkBatchInput").value;if(!raw.trim()){out.innerHTML='<div class="card"><div class="empty">Colle des lignes puis « Générer ».</div></div>';return;}let lines=raw.replace(/\r/g,"").split("\n").filter(l=>l.trim());if(document.getElementById("linkHasHeader").checked)lines.shift();
+  const errs=[],endpoints=[],ifaces=[],all=[];
+  lines.forEach((line,idx)=>{const c=splitCols(line).map(s=>s.trim());const n=idx+1;const rA=c[0]||"",rB=c[1]||"",iA=c[2]||"",iB=c[3]||"",ipAv=c[4]||"",mAv=c[5]||"",mBv=c[6]||"",maCol=c[7]||"";const p=pair31(ipAv);if(!p){errs.push("L"+n+" : @IP invalide ("+(ipAv||"vide")+")");return;}if(mAv&&!isNum(mAv))errs.push("L"+n+" : MEP A non numérique ("+mAv+")");if(mBv&&!isNum(mBv))errs.push("L"+n+" : MEP B non numérique ("+mBv+")");const ma=maCol||p.lower;const descA=(rA||"A")+"-vers-"+(rB||"B"),descB=(rB||"B")+"-vers-"+(rA||"A");const cfgA=fillTemplate(t.body,vsetSide(roles,iA,p.a,descA,mAv,mBv,ma)),cfgB=fillTemplate(t.body,vsetSide(roles,iB,p.b,descB,mBv,mAv,ma));endpoints.push({ip:p.a,tag:"L"+n+"·A"});endpoints.push({ip:p.b,tag:"L"+n+"·B"});ifaces.push({key:(rA||"?")+" / "+iA,tag:"L"+n+"·A"});ifaces.push({key:(rB||"?")+" / "+iB,tag:"L"+n+"·B"});all.push({n,rA,rB,iA,iB,ipA:p.a,ipB:p.b,cfgA,cfgB});});
+  const warns=[];dupReport(endpoints,"ip","@IP en double",warns);dupReport(ifaces,"key","interface réutilisée",warns);
+  if(errs.length)be.innerHTML="<b>Erreurs :</b><br>"+errs.map(esc).join("<br>");
+  if(warns.length)col.innerHTML='<div class="warn"><b>⚠ Collisions détectées :</b><br>'+warns.join("<br>")+'</div>';
+  all.forEach(L=>{const pair=document.createElement("div");pair.className="linkpair";const ttl=document.createElement("div");ttl.className="ttl";ttl.textContent="Lien "+L.n+" — "+(L.rA||"A")+" ("+L.ipA+") ⇄ "+(L.rB||"B")+" ("+L.ipB+")";pair.appendChild(ttl);pair.appendChild(outBlock((L.rA||"Routeur A")+" · "+(L.iA||"?"),L.cfgA));pair.appendChild(outBlock((L.rB||"Routeur B")+" · "+(L.iB||"?"),L.cfgB));out.appendChild(pair);});
+  window._allLinks=all.map(L=>L.cfgA+"\n\n"+L.cfgB).join("\n\n");}
+document.getElementById("copyAllLinks").onclick=function(){if(!window._allLinks)genLinkBatch();if(window._allLinks)copyText(window._allLinks,this);};
+document.getElementById("dlAllLinks").onclick=function(){if(!window._allLinks)genLinkBatch();if(!window._allLinks)return;const b=new Blob([window._allLinks],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="liens-"+current().name.replace(/[^\w\-]+/g,"_")+".txt";a.click();URL.revokeObjectURL(a.href);};
+
+function copyText(txt,btn){const done=()=>{const o=btn.textContent;btn.textContent="Copié ✓";btn.classList.add("ok");setTimeout(()=>{btn.textContent=o;btn.classList.remove("ok");},1400);};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(()=>fb(txt,done));else fb(txt,done);}
+function fb(txt,done){const ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done();}catch(e){}document.body.removeChild(ta);}
+
+renderSelect();renderWorkspace();refreshPair();
+</script>
+</body>
+</html>

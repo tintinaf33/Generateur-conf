@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mode d'emploi — Générateur de configurations</title>
+<style>
+  :root{--bg:#f4f5f7;--panel:#fff;--ink:#1a1d23;--muted:#5b616e;--accent:#2f6df6;--accent-weak:#e7effe;--border:#e2e5ea;--code:#0f1420;--codetx:#e6edf3;--warn-bg:#fff4e0;--warn-bd:#f0c674;--warn-tx:#8a5a00}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1017;--panel:#151a23;--ink:#e6e9ef;--muted:#9aa3b2;--accent:#5b8bff;--accent-weak:#1a2740;--border:#262d3a;--code:#0a0e16;--warn-bg:#3a2e12;--warn-bd:#6b5320;--warn-tx:#e8c37a}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:40px 18px 70px}
+  .sheet{max-width:820px;margin:0 auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:40px 44px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  h1{font-size:25px;margin:0 0 4px;letter-spacing:-.01em}
+  .lead{color:var(--muted);margin:0 0 26px;font-size:15px}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin:30px 0 10px;font-weight:650}
+  h2:first-of-type{margin-top:10px}
+  p{margin:0 0 12px}
+  ol,ul{margin:0 0 12px;padding-left:22px}
+  li{margin:0 0 7px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:var(--accent-weak);color:var(--accent);padding:1px 6px;border-radius:5px}
+  .step{border-left:3px solid var(--accent);padding:2px 0 2px 16px;margin:0 0 16px}
+  .step b{display:block;margin-bottom:2px}
+  .k{display:inline-block;font-family:ui-monospace,monospace;font-size:12px;border:1px solid var(--border);background:var(--bg);border-radius:6px;padding:1px 7px;color:var(--ink)}
+  .warn{background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-tx);border-radius:10px;padding:14px 16px;margin:20px 0;font-size:14px}
+  .warn b{color:var(--warn-tx)}
+  hr{border:0;border-top:1px solid var(--border);margin:26px 0}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:8px}
+  .print{position:fixed;top:16px;right:16px}
+  .btn{border:1px solid var(--border);background:var(--panel);color:var(--ink);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+  .btn:hover{border-color:var(--accent)}
+  @media print{body{background:#fff;padding:0;color:#000}.sheet{border:0;box-shadow:none;max-width:none;padding:0}.print{display:none}h2{color:#000}code{background:#eee;color:#000}}
+</style>
+</head>
+<body>
+<div class="print"><button class="btn" onclick="window.print()">Imprimer / PDF</button></div>
+<div class="sheet">
+
+  <h1>Générateur de configurations — mode d'emploi</h1>
+  <p class="lead">Un outil pour transformer un modèle de configuration en config prête à coller, en ne remplissant que les variables. Aucune installation, aucun envoi de données : tout se passe dans le navigateur, sur ton poste.</p>
+
+  <h2>Démarrer</h2>
+  <p>Double-clique sur le fichier <code>generateur-configurations.html</code> : il s'ouvre dans le navigateur. Il fonctionne <b>hors ligne</b> et rien ne sort de la machine. On peut le poser sur un partage réseau ou l'envoyer par mail — tant que le fichier reste entier, il marche partout.</p>
+
+  <h2>Le principe</h2>
+  <p>Un <b>modèle</b> est un texte de config dans lequel les valeurs à personnaliser sont écrites entre doubles accolades, par exemple <code>{{ nom du site }}</code>. L'outil repère ces variables tout seul et crée un champ pour chacune. Le modèle « Interface P2P — Junos » est déjà pré-chargé.</p>
+
+  <h2>Les quatre usages</h2>
+
+  <div class="step"><b>Une config</b>
+  Onglet <span class="k">Une config</span> : tu remplis les champs à gauche, la configuration se génère à droite en direct. Bouton <span class="k">Copier</span>.</div>
+
+  <div class="step"><b>En lot (depuis Excel)</b>
+  Onglet <span class="k">En lot</span> : tu sélectionnes tes colonnes dans Excel et tu les colles (une config par ligne). L'ordre des colonnes attendu s'affiche au-dessus de la zone. L'outil génère une config par ligne, chacune copiable ; boutons <span class="k">Tout copier</span> et <span class="k">Télécharger .txt</span>.</div>
+
+  <div class="step"><b>Lien P2P — un lien</b>
+  Onglet <span class="k">Lien P2P</span>, mode <span class="k">Un lien</span> : tu renseignes les deux routeurs, leurs interfaces, l'@IP côté A et les deux MEP. L'outil génère les <b>deux bouts</b> du lien d'un coup : il calcule l'@IP du voisin (la paire du /31), inverse les MEP source/remote entre les deux côtés et applique la même maintenance-association des deux côtés.</div>
+
+  <div class="step"><b>Lien P2P — plusieurs liens</b>
+  Même onglet, mode <span class="k">Plusieurs liens (Excel)</span> : tu colles une liste de liens depuis Excel et l'outil génère les deux bouts de chaque lien en une fois.</div>
+
+  <h2>Gérer les modèles</h2>
+  <p>En haut, le menu déroulant liste les modèles. À côté :</p>
+  <ul>
+    <li><span class="k">✎ Modifier</span> — changer le nom ou le contenu du modèle courant.</li>
+    <li><span class="k">＋ Nouveau</span> — créer un modèle : colle ta config et mets <code>{{ }}</code> autour de tout ce qui doit devenir un champ.</li>
+    <li><span class="k">⧉ Dupliquer</span> et <span class="k">🗑 Supprimer</span> (deux clics pour confirmer).</li>
+  </ul>
+  <p>Ça fonctionne pour n'importe quel équipement, pas seulement le modèle Junos.</p>
+
+  <h2>Partager les modèles à l'équipe</h2>
+  <p>Les modèles sont enregistrés dans le navigateur de chacun. Pour les diffuser : une personne clique <span class="k">⬇ Exporter</span> (un fichier <code>.json</code>), l'envoie à l'équipe, et chacun fait <span class="k">⬆ Importer</span>. Tout le monde a alors le même jeu de modèles.</p>
+
+  <h2>Les garde-fous</h2>
+  <ul>
+    <li><b>Validation :</b> un champ @IP ou MEP mal rempli passe en rouge (IP non valide, MEP non numérique).</li>
+    <li><b>Détection de collisions :</b> dans le lot de liens, un bandeau orange signale une @IP utilisée deux fois ou une interface réutilisée sur le même routeur, avec les lignes concernées.</li>
+  </ul>
+
+  <div class="warn">
+    <b>À vérifier avant la prod.</b> Fais toujours un essai avec un lien connu pour confirmer que l'affectation A/B et le choix de la maintenance-association correspondent à votre convention. L'outil accélère la saisie mais ne remplace pas la relecture avant de pousser sur un routeur.
+  </div>
+
+  <hr>
+  <p class="foot">Outil interne — fonctionne hors ligne, aucune donnée transmise. Pour toute évolution (rollback, registre d'adressage, nouveaux modèles), voir l'auteur de l'outil.</p>
+
+</div>
+</body>
+</html>
